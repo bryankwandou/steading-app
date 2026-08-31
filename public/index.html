@@ -103,6 +103,23 @@
         <select id="type"></select>
       </label>
 
+      <!-- Shown only for pictures. A slider rather than a menu because the choice is a
+           position on one scale, not a list of unrelated options: you are trading file
+           size against fidelity, and a slider is the control that says so. Native
+           <input type="range"> so it is keyboard-operable and works under a thumb. -->
+      <div class="picture" id="picture-wrap" hidden>
+        <div class="picture-head">
+          <span class="label" data-i18n="picture.label"></span>
+          <output class="picture-now" id="picture-now" for="picture"></output>
+        </div>
+        <input type="range" id="picture" min="0" max="4" step="1" value="4"
+               data-i18n-attr="aria-label:picture.label">
+        <div class="picture-poles" aria-hidden="true">
+          <span data-i18n="picture.lighter"></span>
+          <span data-i18n="picture.fuller"></span>
+        </div>
+      </div>
+
       <label class="quality" id="quality-wrap">
         <span class="label" data-i18n="quality.label"></span>
         <select id="quality"></select>

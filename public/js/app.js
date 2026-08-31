@@ -32,6 +32,9 @@ const el = {
   typeWrap: $('type-wrap'),
   type: $('type'),
   qualityWrap: $('quality-wrap'),
+  pictureWrap: $('picture-wrap'),
+  picture: $('picture'),
+  pictureNow: $('picture-now'),
   quality: $('quality'),
   download: $('download'),
   progress: $('progress'),
@@ -57,6 +60,10 @@ const state = {
   /** The chosen format id within each kind, so switching back restores the last pick. */
   chosen: { video: 'mp4', audio: 'mp3', image: 'jpg' },
   quality: 'best',
+  // Where the picture slider sits. Defaults to the best step rather than the middle:
+  // quietly degrading a picture nobody asked to degrade is the wrong way round, and
+  // moving left is one gesture.
+  picture: 'original',
   jobId: null,
   unwatch: null,
   /** @type {{key: string, vars?: object, kind: string}|null} */
@@ -240,15 +247,28 @@ function renderPreview(info) {
  * this is the courtesy, not the guarantee.
  */
 function applyFormatAvailability(info) {
+  // Two different ways a kind can be unavailable, and they narrow by different amounts.
+  //
+  // audioOnly: the site or the item has no video stream, so video is out.
+  // pictureOnly: yt-dlp could not read the page at all. That is not a failure any more
+  //   -- an ordinary web page or forum thread is exactly what the picture providers
+  //   were built for, and they do not use yt-dlp -- but there is no media stream to
+  //   offer, so only pictures remain.
+  const pictureOnly = Boolean(info.pictureOnly);
   const audioOnly = Boolean(info.audioOnly);
 
   for (const button of el.segButtons) {
-    if (button.dataset.kind !== 'video') continue;
-    button.disabled = audioOnly;
+    const kind = button.dataset.kind;
+    button.disabled = pictureOnly ? kind !== 'image' : (kind === 'video' && audioOnly);
   }
-  el.seg.classList.toggle('is-locked', audioOnly);
+  el.seg.classList.toggle('is-locked', pictureOnly || audioOnly);
 
-  if (audioOnly && state.kind === 'video') {
+  // Move off a segment that has just been disabled, rather than leaving the control
+  // pointing at a choice that cannot be acted on.
+  if (pictureOnly && state.kind !== 'image') {
+    selectKind('image');
+    say('format.pictureOnly');
+  } else if (audioOnly && state.kind === 'video') {
     selectKind('audio');
     say('error.video_not_available');
   }
@@ -297,8 +317,10 @@ function selectKind(kind) {
   }
 
   renderTypes();
-  // Only video has a height to cap.
+  renderPicture();
+  // Only video has a height to cap; only pictures have a size to trade against it.
   el.qualityWrap.hidden = kind !== 'video';
+  el.pictureWrap.hidden = kind !== 'image';
 }
 
 /**
@@ -333,6 +355,31 @@ el.type.addEventListener('change', () => { state.chosen[state.kind] = el.type.va
 
 el.quality.addEventListener('change', () => { state.quality = el.quality.value; });
 
+/**
+ * Build the picture slider from whatever steps the server published.
+ *
+ * The scale is ordered lightest-to-best on the server, so the slider index *is* the
+ * position on that scale and no mapping table is needed here. Adding a step to the
+ * server's table widens the slider on its own.
+ */
+function renderPicture() {
+  const steps = state.health?.pictureQualities ?? [];
+  if (!steps.length) return;
+
+  el.picture.max = String(steps.length - 1);
+  const at = steps.indexOf(state.picture);
+  const index = at === -1 ? steps.length - 1 : at;
+  el.picture.value = String(index);
+  state.picture = steps[index];
+  el.pictureNow.textContent = t(`picture.${state.picture}`);
+}
+
+el.picture.addEventListener('input', () => {
+  const steps = state.health?.pictureQualities ?? [];
+  state.picture = steps[Number(el.picture.value)] ?? 'original';
+  el.pictureNow.textContent = t(`picture.${state.picture}`);
+});
+
 el.download.addEventListener('click', async () => {
   if (!state.info) return;
 
@@ -344,7 +391,11 @@ el.download.addEventListener('click', async () => {
     const job = await api.createJob({
       url: state.info.url,
       format: currentFormat(),
-      quality: state.kind === 'video' ? state.quality : 'best',
+      // Each kind speaks its own quality vocabulary; audio has none, so it sends the
+      // video default, which the server accepts and ignores.
+      quality: state.kind === 'video' ? state.quality
+        : state.kind === 'image' ? state.picture
+        : 'best',
       title: state.info.title,
     });
     startWatching(job.id);
@@ -466,8 +517,10 @@ async function checkServer() {
   }
   paintServerStatus();
   paintSupported();
-  // The format list travels with health, so the type select cannot be built until now.
+  // The format list and the picture scale both travel with health, so neither control
+  // can be built before this point.
   renderTypes();
+  renderPicture();
 
   if (state.health && !state.health.ok) say('server.missingLong', { kind: 'error' });
 }
@@ -597,6 +650,7 @@ function repaintLanguage() {
     renderQualities(state.info);
   }
   renderTypes();
+  renderPicture();
   if (state.lastProgress) renderProgress(state.lastProgress);
 
   el.lang.value = getLanguage();

@@ -130,12 +130,44 @@ yang dipakai.
 | Video | MP4, MKV, WebM            | kualitas bisa dibatasi 1080p ke bawah          |
 | Audio | MP3, M4A, Opus, WAV, FLAC | WAV dan FLAC tanpa kompresi, berkasnya besar   |
 | Foto  | JPG, PNG, WebP            | mengambil sampul atau thumbnail, bukan videonya |
+| Foto  | PDF                       | semua gambar dalam satu kiriman, jadi satu berkas |
 
 Foto berguna untuk sampul album SoundCloud atau thumbnail YouTube. Kalau tautannya sama
 sekali tidak punya gambar, Steading bilang begitu daripada menyimpan berkas kosong.
 
 Situs yang isinya audio saja — SoundCloud, Bandcamp, Mixcloud — tidak menawarkan video.
 Tombol Video mati sendiri dan alasannya ditulis, bukan sekadar dimatikan diam-diam.
+
+## Banyak foto jadi satu PDF
+
+Pilih **Foto**, lalu tipe **PDF**. Semua gambar dalam satu kiriman digabung jadi satu
+berkas, satu gambar per halaman, ukuran halaman mengikuti ukuran gambarnya — tidak
+dipaksa ke A4, jadi foto potret tidak diberi pinggiran kosong.
+
+Gambar dicari lewat tiga penyedia yang dicoba berurutan: gallery-dl kalau kebetulan
+terpasang, lalu pembaca HTML bawaan yang menangani situs biasa dan forum, lalu thumbnail
+dari yt-dlp. **Tidak satu pun wajib** — yang tidak terpasang dilewati begitu saja.
+Urutannya bisa Anda atur:
+
+```bash
+IMAGE_PROVIDERS=scrape npm start
+```
+
+Halaman yang tidak bisa dibaca yt-dlp — artikel, utas forum — tetap bisa diambil
+gambarnya. Localizer akan bilang bahwa tautan itu bukan video atau lagu, lalu mengunci
+pilihan ke Foto.
+
+### Slider kualitas
+
+Untuk Foto ada slider lima tingkat: **Sangat ringan → Ringan → Seimbang → Tinggi →
+Asli**. Bawaannya Asli, karena menurunkan kualitas gambar yang tidak diminta turun itu
+terbalik urutannya — dan menggesernya ke kiri cuma satu gerakan.
+
+Bedanya nyata. Artikel yang sama, enam halaman: **2,37 MB** pada Asli, **433 KB** pada
+Ringan. Berguna kalau PDF-nya mau dikirim lewat WhatsApp.
+
+Pada Asli, JPEG yang datang sebagai JPEG ditanam apa adanya — tidak dibongkar, tidak
+disandikan ulang, jadi tidak ada kualitas yang hilang.
 
 ## Ekstensi browser
 

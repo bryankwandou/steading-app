@@ -16,11 +16,15 @@ zero-dependency Node HTTP server that drives `yt-dlp` and `ffmpeg`.
    server/index.js` straight out of a `git clone` is far more robust. External tooling
    (`yt-dlp`, `ffmpeg`) ships as platform binaries, not npm packages.
 2. **No build step.** Plain HTML + CSS + ES modules. Edit, refresh, done. App shell
-   budget: under 80 KB uncompressed, excluding icons (currently ~76 KB, roughly a third
-   of it comments). The budget was 70 KB and ~61 KB when the app offered two formats on
-   four sites; eleven formats across three kinds, the collapsible site list and the
-   universal-mode notice account for the rest, and none of it is dead — the shell was
-   checked for unreferenced code and unused dictionary keys when the number moved.
+   budget: under 88 KB uncompressed, excluding icons (currently ~82 KB, roughly a third
+   of it comments). It was 70 KB and ~61 KB when the app offered two formats on four
+   sites; twelve formats across three kinds, the picture-quality slider, the collapsible
+   site list and the universal-mode notice account for the rest.
+
+   The number has now moved twice. Both times the shell was checked for unreferenced
+   code and unused dictionary keys first, and both times it was clean, so the growth is
+   features rather than rot — but a budget raised whenever it binds is not a budget.
+   Before raising it a third time, delete something.
    The number that actually matters is unchanged: it does **not grow with the language
    count** — only English and Indonesian are inline; the other 22 dictionaries are
    113 KB that never load unless someone picks one.
@@ -162,6 +166,7 @@ appear in the picker.
 | `video` | mp4, mkv, webm                  | stream selector + `--merge-output-format`   |
 | `audio` | mp3, m4a, opus, wav, flac       | `--extract-audio --audio-format`            |
 | `image` | jpg, png, webp                  | `--write-thumbnail`, then our own ffmpeg    |
+| `image` | pdf (`multi: true`)             | provider chain, then lib/pdf.js             |
 
 Three things here are easy to undo by accident:
 
@@ -185,6 +190,53 @@ An image job spawns a second process, so `startDownload` takes an `onChild` call
 jobs.js keeps only the current one. Without it a cancel during the conversion would kill
 a yt-dlp that had already exited and leave ffmpeg writing into a directory the purge was
 about to remove -- the exact leak the cleanup contract exists to prevent.
+
+## A post's pictures
+
+`pdf` is the only format with `multi: true`, and that flag changes the whole job.
+`startDownload` dispatches on it: a multi format goes to `startGallery`, which starts no
+yt-dlp at all. jobs.js is not told the difference -- both paths return `{ child, done }`.
+
+Pictures are found by a **chain of providers**, tried in `config.imageProviders` order
+until one returns something:
+
+- `gallerydl` -- gallery-dl, asked for URLs with `-g` so it downloads nothing. It knows
+  a hundred sites' post formats; letting it write files itself would put a second
+  downloader with its own naming rules inside the job directory.
+- `scrape` -- `lib/scrape.js` reads the page: og:image, JSON-LD, then `<img>`. This is
+  the one that covers an ordinary website or a forum thread, and it needs no extra
+  program. It cannot see a page that builds itself in the browser.
+- `ytdlp` -- the poster frame. One picture, never a carousel.
+
+**None of them is required.** A missing gallery-dl is skipped, not an error. That is what
+keeps the install story short for someone on a phone, and it is why the order is a
+preference rather than a ranking.
+
+Three things here are load-bearing:
+
+- **Every scraped URL is resolved before it is fetched.** `isFetchable()` does a DNS
+  lookup and refuses private, loopback, link-local and carrier-NAT addresses -- every
+  address the name resolves to, not just the first. Without it a hostile post could name
+  `http://127.0.0.1:8080/admin` and have this server fetch it back as a "photo". It is
+  `hostAllowed()` in index.js pointed the other way: that one stops the outside reaching
+  in, this one stops the inside being reached out to.
+- **A dead picture is skipped, not fatal.** One expired CDN URL in twenty is normal. Only
+  an empty result raises `no_image`. The visible consequence is that a host which
+  throttles a rapid second request quietly yields a shorter PDF -- measured on Wikipedia,
+  where six pages became one until a pause was added between runs.
+- **`PICTURE_QUALITY_TABLE` is ordered lightest-to-best and the order is the UI.** The
+  slider's index *is* a position in that array, so adding a step widens the slider with
+  no UI change. `original` embeds the JPEG byte for byte and only re-encodes what a PDF
+  cannot carry.
+
+### When yt-dlp cannot read the page
+
+`/api/info` no longer fails in that case. It answers with `pictureOnly: true` and a
+title taken from the address, and the UI locks the picker to Photo. The reason is that
+those pages -- an article, a forum thread -- are exactly what the picture providers were
+built for, and none of them uses yt-dlp. Failing the preview would have put the feature
+behind a step that can never succeed for the pages it serves. A missing binary still
+fails: that is a broken install, not an unsupported page.
 
 ## Localization
 

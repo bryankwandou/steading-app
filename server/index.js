@@ -13,7 +13,7 @@ import { serveStatic } from './static.js';
 import { fetchInfo, probeVersion, probeExtractorCount, warmVersions } from './ytdlp.js';
 import {
   validateUrl, validateFormat, validateQuality, validateJobId, safeFilename, SUPPORTED_PLATFORMS,
-  FORMAT_KINDS, formatInfo,
+  FORMAT_KINDS, formatInfo, PICTURE_QUALITIES,
 } from './lib/validate.js';
 import {
   createJob, getJob, subscribe, cancelJob, completeAndPurge, publicView, initJobSystem, countActive,
@@ -131,7 +131,37 @@ async function handleInfo(req, res) {
       audioOnly: url.audioOnly || !info.hasVideo,
     });
   } catch (err) {
-    return fail(res, err.code === ERR.NO_BINARY ? 503 : 422, err.code || ERR.SERVER_ERROR, err.detail ?? null);
+    // yt-dlp not being able to read a page is not the end of the story any more.
+    //
+    // The picture providers do not use yt-dlp at all -- the scraper reads the HTML, and
+    // gallery-dl has its own extractors -- so an ordinary web page or forum thread that
+    // yt-dlp rejects is exactly the case the PDF format was built for. Failing the whole
+    // request here would put the feature behind a preview step that can never succeed
+    // for the pages it was meant to serve.
+    //
+    // A missing binary still fails: that is a broken install, not an unsupported page.
+    if (err.code !== ERR.NO_BINARY) {
+      return json(res, 200, {
+        url: url.url,
+        platform: url.platform,
+        platformLabel: url.platformLabel,
+        // Named from the address rather than from the page, because fetching the page
+        // to read its <title> is work the picture job is about to do anyway.
+        title: decodeURIComponent(new URL(url.url).pathname.split('/').filter(Boolean).pop() || url.platformLabel)
+          .replace(/[_+]/g, ' ').slice(0, 120),
+        thumbnail: null,
+        duration: null,
+        uploader: null,
+        qualities: ['best'],
+        hasVideo: false,
+        isLive: false,
+        audioOnly: false,
+        // The UI locks itself to pictures on this flag: there is nothing to preview and
+        // no video or audio to offer, but the pictures on the page can still be saved.
+        pictureOnly: true,
+      });
+    }
+    return fail(res, 503, err.code, err.detail ?? null);
   }
 }
 
@@ -274,6 +304,9 @@ async function handleHealth(res) {
     // The UI builds its format controls from this rather than from a copy of the table,
     // so a format the server does not accept can never appear as an option.
     formats: FORMAT_KINDS,
+    // The picture-quality scale, lightest first. The slider is built from this, so a
+    // step added to the table appears in the UI without the UI being touched.
+    pictureQualities: PICTURE_QUALITIES,
   });
 }
 
