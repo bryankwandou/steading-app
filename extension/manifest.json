@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Send to Steading",
+  "version": "1.0.0",
+  "description": "Send the page or link you are looking at to Steading, running on your own machine.",
+  "permissions": ["contextMenus", "storage"],
+  "action": {
+    "default_title": "Send this page to Steading",
+    "default_icon": {
+      "64": "icons/favicon-64.png",
+      "192": "icons/icon-192.png"
+    }
+  },
+  "icons": {
+    "64": "icons/favicon-64.png",
+    "192": "icons/icon-192.png",
+    "512": "icons/icon-512.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  }
+}

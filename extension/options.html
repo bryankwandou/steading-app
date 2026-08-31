@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Send to Steading</title>
+<style>
+  /* Deliberately plain. This page exists for one number; styling it like the app would
+     mean keeping two stylesheets in step for no gain. */
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0;
+    padding: 16px;
+    width: 260px;
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  h1 { margin: 0 0 4px; font-size: 15px; }
+  p { margin: 0 0 12px; opacity: .7; font-size: 12.5px; }
+  label { display: block; margin-bottom: 6px; font-size: 12.5px; }
+  input { width: 100%; box-sizing: border-box; padding: 7px 8px; font: inherit; }
+  #saved { margin: 10px 0 0; font-size: 12.5px; min-height: 1.5em; }
+</style>
+</head>
+<body>
+  <h1>Send to Steading</h1>
+  <p>Links open at 127.0.0.1 on this port. Change it only if you start Steading with a different <code>PORT</code>.</p>
+  <label for="port">Port</label>
+  <input id="port" type="number" min="1" max="65535" step="1">
+  <p id="saved" role="status"></p>
+  <script src="options.js"></script>
+</body>
+</html>

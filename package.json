@@ -1,0 +1,21 @@
+{
+  "name": "steading",
+  "version": "1.0.0",
+  "description": "Steading - Fast. Seamless. 100% Local. A local-first video & audio downloader PWA.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "check": "node scripts/check-deps.js",
+    "icons": "node scripts/make-icons.js",
+    "test": "node --test --experimental-test-module-mocks tests/*.test.js",
+    "universal": "node scripts/universal.js",
+    "share": "node scripts/share.js",
+    "live": "node scripts/publish-live.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

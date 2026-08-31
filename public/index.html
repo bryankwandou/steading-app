@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Steading</title>
+<meta name="description" content="Fast. Seamless. 100% Local.">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Steading">
+<script src="/js/boot-theme.js"></script>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="head">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3.5v11.5m0 0 4.2-4.2M12 15l-4.2-4.2"/>
+      <path d="M4.5 17.5v1.2a1.8 1.8 0 0 0 1.8 1.8h11.4a1.8 1.8 0 0 0 1.8-1.8v-1.2"/>
+    </svg>
+    <span class="brand-text">
+      <span class="brand-name">Steading</span>
+      <span class="tagline">Fast. Seamless. 100% Local.</span>
+    </span>
+  </div>
+
+  <div class="head-actions">
+    <div class="lang">
+      <svg class="lang-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.5"/>
+        <path d="M3.5 12h17M12 3.5c2.2 2.3 3.3 5.2 3.3 8.5s-1.1 6.2-3.3 8.5c-2.2-2.3-3.3-5.2-3.3-8.5S9.8 5.8 12 3.5Z"/>
+      </svg>
+      <select id="lang" data-i18n-attr="aria-label:nav.language"></select>
+      <svg class="lang-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10.5 4 4 4-4"/></svg>
+    </div>
+
+    <button type="button" id="theme" class="btn-icon theme-btn" data-i18n-attr="aria-label:nav.theme">
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.2"/>
+        <path d="M12 2.6v2.2M12 19.2v2.2M4.36 4.36 5.9 5.9M18.1 18.1l1.54 1.54M2.6 12h2.2M19.2 12h2.2M4.36 19.64 5.9 18.1M18.1 5.9l1.54-1.54"/>
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.2 14.2A8.3 8.3 0 0 1 9.8 3.8a8.3 8.3 0 1 0 10.4 10.4Z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main class="app">
+
+  <form id="url-form" class="field" autocomplete="off" novalidate>
+    <label class="label" for="url" data-i18n="url.label"></label>
+    <div class="input-row">
+      <input id="url" name="url" type="url" inputmode="url" spellcheck="false"
+             aria-describedby="url-hint"
+             data-i18n-attr="placeholder:url.placeholder">
+      <button type="button" id="paste" class="btn-icon"
+              data-i18n-attr="aria-label:url.paste, title:url.paste">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="8" y="3.5" width="8" height="3.5" rx="1.2"/>
+          <path d="M8 5.2H6.4A1.4 1.4 0 0 0 5 6.6v12.6a1.4 1.4 0 0 0 1.4 1.4h11.2a1.4 1.4 0 0 0 1.4-1.4V6.6a1.4 1.4 0 0 0-1.4-1.4H16"/>
+        </svg>
+      </button>
+    </div>
+    <p id="supports" class="supports">
+      <span id="supports-text"></span>
+      <button type="button" id="supports-toggle" class="btn-inline" hidden aria-expanded="false"></button>
+    </p>
+    <p id="supports-checked" class="supports supports-checked" hidden></p>
+    <p id="url-hint" class="hint" data-i18n="url.hint"></p>
+    <button type="submit" id="fetch" class="btn btn-primary" data-i18n="action.check"></button>
+  </form>
+
+  <section id="preview" class="card" hidden aria-live="polite">
+    <div class="media">
+      <div class="thumb is-empty" id="thumb-wrap">
+        <img id="thumb" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+      </div>
+      <div class="meta">
+        <h2 id="title" class="title"></h2>
+        <p id="submeta" class="submeta"></p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="seg" id="seg" data-active="video" role="radiogroup"
+           data-i18n-attr="aria-label:format.label">
+        <span class="seg-thumb" aria-hidden="true"></span>
+        <button type="button" class="seg-btn is-on" data-kind="video" role="radio"
+                aria-checked="true" data-i18n="format.video"></button>
+        <button type="button" class="seg-btn" data-kind="audio" role="radio"
+                aria-checked="false" data-i18n="format.audio"></button>
+        <button type="button" class="seg-btn" data-kind="image" role="radio"
+                aria-checked="false" data-i18n="format.image"></button>
+      </div>
+
+      <label class="quality" id="type-wrap">
+        <span class="label" data-i18n="format.type"></span>
+        <select id="type"></select>
+      </label>
+
+      <label class="quality" id="quality-wrap">
+        <span class="label" data-i18n="quality.label"></span>
+        <select id="quality"></select>
+      </label>
+    </div>
+
+    <button type="button" id="download" class="btn btn-primary" data-i18n="action.download"></button>
+  </section>
+
+  <section id="progress" class="card" hidden aria-live="polite">
+    <div class="prog-head">
+      <span id="phase" class="phase"></span>
+      <span id="percent" class="percent">&mdash;</span>
+    </div>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-labelledby="phase">
+      <div id="bar-fill" class="bar-fill is-indeterminate"></div>
+    </div>
+    <div class="prog-foot">
+      <span id="stats" class="stats"></span>
+      <button type="button" id="cancel" class="btn-link" data-i18n="action.cancel"></button>
+    </div>
+  </section>
+
+  <p id="message" class="message" hidden role="status"></p>
+
+</main>
+
+<footer class="foot">
+  <span id="server-status" class="dot"></span>
+  <span id="server-text" class="foot-text"></span>
+</footer>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
