@@ -111,7 +111,7 @@ export async function cancelJob(job, code = ERR.CANCELED) {
  * Start a job. Resolves as soon as the child is spawned -- the download itself runs in
  * the background and is observed over SSE.
  */
-export async function createJob({ url, format, quality, title }) {
+export async function createJob({ url, format, quality, title, guard = false }) {
   if (countActive() >= config.maxConcurrentJobs) {
     throw coded(ERR.TOO_MANY_JOBS, { status: 429, detail: String(config.maxConcurrentJobs) });
   }
@@ -149,11 +149,15 @@ export async function createJob({ url, format, quality, title }) {
 
   let handle;
   try {
-    handle = startDownload({
+    handle = await startDownload({
       url,
       format,
       quality,
       dir,
+      // Unlisted hosts go through the loopback proxy, which resolves the name and
+      // connects to that address itself -- so there is no second lookup to poison
+      // between the check and the fetch.
+      guard,
       // Every process the job owns is reported here, so a cancel arriving during the
       // image conversion kills ffmpeg rather than a yt-dlp that has already exited.
       onChild: (child) => { if (!TERMINAL.has(job.state)) job.child = child; },

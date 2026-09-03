@@ -10,6 +10,7 @@ import { spawn, execFile, execFileSync } from 'node:child_process';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { config } from './config.js';
+import { guardProxyUrl } from './lib/guard-proxy.js';
 import { formatInfo, pictureQuality } from './lib/validate.js';
 import { scrapeImages } from './lib/scrape.js';
 import { downloadImages, convertArgs, isJpeg } from './lib/gallery.js';
@@ -48,9 +49,32 @@ function baseArgs() {
   return args;
 }
 
+/**
+ * The impersonation target used when a site refuses the default client.
+ *
+ * "chrome" asks yt-dlp for the newest Chrome profile curl_cffi carries, so this does
+ * not pin a version that will age out of the bundle.
+ */
+export const IMPERSONATE = 'chrome';
+
+/**
+ * Was this failure a refusal of the client itself?
+ *
+ * Narrow on purpose. A 403 means the server understood the request and declined it,
+ * which is what fingerprint blocking looks like; a 404 or a parse failure means
+ * something else entirely and retrying would only cost time.
+ */
+export function looksBlocked(stderr) {
+  return /HTTP Error 403|403: Forbidden|Got error: 403/i.test(String(stderr || ''));
+}
+
 /** @returns {string[]} argv for a metadata-only probe. Exported for tests. */
-export function buildInfoArgs(url) {
-  return [...baseArgs(), '--dump-single-json', '--skip-download', '--', url];
+export function buildInfoArgs(url, { proxy } = {}) {
+  const args = [...baseArgs(), '--dump-single-json', '--skip-download'];
+  // Before the `--` guard, never after: the URL stays the last word and can never be
+  // read as a flag.
+  if (proxy) args.push('--proxy', proxy);
+  return [...args, '--', url];
 }
 
 /**
@@ -168,27 +192,52 @@ export function classifyError(stderr) {
  * Metadata only -- no bytes of media are fetched.
  * @returns {Promise<object>} normalized info
  */
-export function fetchInfo(url) {
-  const bin = requireYtdlp();
-  return new Promise((resolvePromise, rejectPromise) => {
+function runInfo(bin, url, impersonate, proxy) {
+  const args = buildInfoArgs(url, { proxy });
+  // Inserted before the `--` guard, never after it, so the URL is still the last word
+  // and can never be read as a flag.
+  const argv = impersonate ? [...args.slice(0, -2), '--impersonate', IMPERSONATE, ...args.slice(-2)] : args;
+
+  return new Promise((settle) => {
     execFile(
       bin,
-      buildInfoArgs(url),
+      argv,
       { timeout: config.infoTimeoutMs, maxBuffer: 32 * 1024 * 1024, windowsHide: true },
-      (err, stdout, stderr) => {
-        if (err) {
-          if (err.killed) return rejectPromise(coded(ERR.INFO_TIMEOUT));
-          const { code, detail } = classifyError(stderr);
-          return rejectPromise(coded(code, { detail }));
-        }
-        try {
-          resolvePromise(normalizeInfo(JSON.parse(stdout)));
-        } catch {
-          rejectPromise(coded(ERR.INFO_UNREADABLE));
-        }
-      },
+      (err, stdout, stderr) => settle({ err, stdout, stderr }),
     );
   });
+}
+
+/**
+ * @param {string} url
+ * @param {{guard?: boolean}} [options] `guard` sends the request through the loopback
+ *   proxy, which resolves the name and connects to that address itself. Used for hosts
+ *   that are not on the list, where the checks upstream can only look and then hope
+ *   nothing changed before yt-dlp went and looked for itself.
+ */
+export async function fetchInfo(url, { guard = false } = {}) {
+  const bin = requireYtdlp();
+  const proxy = guard ? await guardProxyUrl() : undefined;
+
+  let { err, stdout, stderr } = await runInfo(bin, url, false, proxy);
+
+  // A refusal of the client is worth one more try wearing a browser's fingerprint.
+  // Measured on Rumble: the plain client gets 403, the impersonated one gets the video.
+  if (err && !err.killed && looksBlocked(stderr)) {
+    ({ err, stdout, stderr } = await runInfo(bin, url, true, proxy));
+  }
+
+  if (err) {
+    if (err.killed) throw coded(ERR.INFO_TIMEOUT);
+    const { code, detail } = classifyError(stderr);
+    throw coded(code, { detail });
+  }
+
+  try {
+    return normalizeInfo(JSON.parse(stdout));
+  } catch {
+    throw coded(ERR.INFO_UNREADABLE);
+  }
 }
 
 /**
@@ -204,7 +253,14 @@ export function fetchInfo(url) {
  *
  * @returns {{child: import('node:child_process').ChildProcess, done: Promise<{file: string}>}}
  */
-export function startDownload(options) {
+export async function startDownload(options) {
+  // Resolved here rather than inside the attempt, so both attempts and the gallery path
+  // see the same proxy and the address is settled before anything spawns.
+  const proxy = options.guard ? await guardProxyUrl() : undefined;
+  return startDownloadWith({ ...options, proxy });
+}
+
+function startDownloadWith(options) {
   // A multi-picture format is a different job entirely: no yt-dlp process, an HTTP
   // phase instead of a download phase, and a file assembled here rather than written
   // by the downloader. Dispatching on the format table keeps that knowledge out of
@@ -213,9 +269,23 @@ export function startDownload(options) {
   return startMediaDownload(options);
 }
 
-function startMediaDownload({ url, format, quality, dir, onEvent, onChild }) {
+/**
+ * One download attempt.
+ *
+ * Split out of startMediaDownload so the same wiring can be used twice: once plainly,
+ * and once wearing a browser's fingerprint if the site refused the first one.
+ */
+function spawnAttempt({ url, format, quality, dir, onEvent, impersonate, proxy }) {
   const bin = requireYtdlp();
-  const child = spawn(bin, buildDownloadArgs({ url, format, quality, dir }), {
+  const base = buildDownloadArgs({ url, format, quality, dir });
+  const args = proxy ? [...base.slice(0, -2), '--proxy', proxy, ...base.slice(-2)] : base;
+  // Before the `--` guard, never after, so the URL stays the last word and can never be
+  // read as a flag.
+  const argv = impersonate
+    ? [...args.slice(0, -2), '--impersonate', IMPERSONATE, ...args.slice(-2)]
+    : args;
+
+  const child = spawn(bin, argv, {
     windowsHide: true,
     stdio: ['ignore', 'pipe', 'pipe'],
     // Own process group on POSIX, so killTree can signal yt-dlp *and* the ffmpeg it
@@ -261,8 +331,13 @@ function startMediaDownload({ url, format, quality, dir, onEvent, onChild }) {
 
       if (signal) return rejectPromise(coded(ERR.CANCELED));
       if (code !== 0) {
-        const classified = classifyError(sawError || stderrTail);
-        return rejectPromise(coded(classified.code, { detail: classified.detail }));
+        const raw = sawError || stderrTail;
+        const classified = classifyError(raw);
+        const failure = coded(classified.code, { detail: classified.detail });
+        // Carried so the caller can decide on a retry without re-reading stderr, and
+        // never for a cancel -- a killed process must stay killed.
+        failure.blocked = looksBlocked(raw);
+        return rejectPromise(failure);
       }
 
       try {
@@ -278,6 +353,27 @@ function startMediaDownload({ url, format, quality, dir, onEvent, onChild }) {
 
   return { child, done };
 }
+
+function startMediaDownload({ url, format, quality, dir, onEvent, onChild, proxy }) {
+  const first = spawnAttempt({ url, format, quality, dir, onEvent, impersonate: false, proxy });
+
+  const done = first.done.catch(async (err) => {
+    if (!err?.blocked) throw err;
+
+    // The site refused the client rather than the request. Try once more as a browser,
+    // the same way fetchInfo does -- measured on Rumble, where the plain client gets a
+    // 403 and the impersonated one gets the video.
+    const second = spawnAttempt({ url, format, quality, dir, onEvent, impersonate: true, proxy });
+
+    // Hand the new process over immediately: from here it is the one a cancel must kill.
+    try { onChild?.(second.child); } catch { /* listener errors are not ours */ }
+
+    return second.done;
+  });
+
+  return { child: first.child, done };
+}
+
 
 /**
  * Convert the picture yt-dlp wrote into the format that was asked for.

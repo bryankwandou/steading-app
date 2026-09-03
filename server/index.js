@@ -10,6 +10,8 @@ import { createReadStream } from 'node:fs';
 import { basename } from 'node:path';
 import { config } from './config.js';
 import { serveStatic } from './static.js';
+import { resolvesPrivately } from './lib/resolve-guard.js';
+import { redirectsInward } from './lib/redirect-guard.js';
 import { fetchInfo, probeVersion, probeExtractorCount, warmVersions } from './ytdlp.js';
 import {
   validateUrl, validateFormat, validateQuality, validateJobId, safeFilename, SUPPORTED_PLATFORMS,
@@ -112,14 +114,36 @@ function hostAllowed(req) {
 
 /* ------------------------------------------------------------------ routes */
 
+/**
+ * An unlisted host has to point somewhere public before anything runs for it.
+ *
+ * Only the universal path pays for this. A catalogued site is a known public name, so
+ * resolving it on every paste would buy nothing and cost a round trip.
+ *
+ * @returns {boolean} true when the request should be refused.
+ */
+async function pointsSomewhereItShouldNot(validated) {
+  if (validated.platform !== 'other') return false;
+  try {
+    if (await resolvesPrivately(new URL(validated.url).hostname)) return true;
+  } catch {
+    return true;
+  }
+  // Where it points is settled; where it forwards to is not. A public host can answer
+  // 302 with a private Location, and yt-dlp follows redirects.
+  return redirectsInward(validated.url);
+}
+
 async function handleInfo(req, res) {
   const body = await readJsonBody(req);
 
   const url = validateUrl(body.url, { universal: config.universal });
   if (!url.ok) return fail(res, 400, url.code, url.detail ?? null);
+  if (await pointsSomewhereItShouldNot(url)) return fail(res, 400, ERR.URL_UNSUPPORTED_SITE);
+  if (await pointsSomewhereItShouldNot(url)) return fail(res, 400, ERR.URL_UNSUPPORTED_SITE);
 
   try {
-    const info = await fetchInfo(url.url);
+    const info = await fetchInfo(url.url, { guard: url.platform === 'other' });
     if (info.isLive) return fail(res, 400, ERR.IS_LIVE);
     return json(res, 200, {
       ...info,
@@ -189,6 +213,9 @@ async function handleCreateJob(req, res) {
       format: format.format,
       quality: quality.quality,
       title: body.title,
+      // Unlisted hosts are fetched through the loopback proxy, so the name is resolved
+      // and connected to in one act rather than checked and then looked up again.
+      guard: url.platform === 'other',
     });
     return json(res, 201, publicView(job));
   } catch (err) {

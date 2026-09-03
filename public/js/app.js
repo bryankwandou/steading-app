@@ -32,6 +32,9 @@ const el = {
   typeWrap: $('type-wrap'),
   type: $('type'),
   qualityWrap: $('quality-wrap'),
+  opening: $('opening'),
+  can: $('can'),
+  canList: $('can-list'),
   pictureWrap: $('picture-wrap'),
   picture: $('picture'),
   pictureNow: $('picture-now'),
@@ -233,6 +236,9 @@ function renderPreview(info) {
   applyFormatAvailability(info);
 
   el.preview.hidden = false;
+  // The opening had the screen to itself; now there is something real to look at.
+  if (el.opening) el.opening.hidden = true;
+  if (el.can) el.can.hidden = true;
   el.download.focus({ preventScroll: true });
 }
 
@@ -362,6 +368,42 @@ el.quality.addEventListener('change', () => { state.quality = el.quality.value; 
  * position on that scale and no mapping table is needed here. Adding a step to the
  * server's table widens the slider on its own.
  */
+/**
+ * What this build can hand back, listed from what the server reports.
+ *
+ * Read from health rather than written into the markup so it cannot claim a format the
+ * server would refuse. Hidden once a link has been checked, because by then the reader
+ * has a preview in front of them and this is answering a question they stopped asking.
+ */
+function renderCan() {
+  const kinds = state.health?.formats ?? [];
+  if (!kinds.length) return;
+
+  const list = document.createDocumentFragment();
+  for (const group of kinds) {
+    const row = document.createElement('li');
+    row.className = 'can-row';
+
+    const kind = document.createElement('span');
+    kind.className = 'can-kind';
+    kind.textContent = t(`format.${group.kind}`);
+
+    const formats = document.createElement('span');
+    formats.className = 'can-formats';
+    for (const id of group.formats) {
+      const chip = document.createElement('span');
+      chip.textContent = id.toUpperCase();
+      formats.append(chip);
+    }
+
+    row.append(kind, formats);
+    list.append(row);
+  }
+
+  el.canList.replaceChildren(list);
+  el.can.hidden = false;
+}
+
 function renderPicture() {
   const steps = state.health?.pictureQualities ?? [];
   if (!steps.length) return;
@@ -521,6 +563,7 @@ async function checkServer() {
   // can be built before this point.
   renderTypes();
   renderPicture();
+  renderCan();
 
   if (state.health && !state.health.ok) say('server.missingLong', { kind: 'error' });
 }

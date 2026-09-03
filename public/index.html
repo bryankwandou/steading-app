@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Steading</title>
-<meta name="description" content="Fast. Seamless. 100% Local.">
+<meta name="description" content="Save video, audio and photos from 1,752 sites onto your own machine. The program runs on your computer, so no file and no link is ever sent to a third party.">
 <meta name="theme-color" content="#ffffff">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
@@ -24,7 +24,7 @@
     </svg>
     <span class="brand-text">
       <span class="brand-name">Steading</span>
-      <span class="tagline">Fast. Seamless. 100% Local.</span>
+      <span class="tagline">Nothing is uploaded.</span>
     </span>
   </div>
 
@@ -52,6 +52,14 @@
 
 <main class="app">
 
+  <!-- The empty state carries the introduction, because it is the only screen that has
+       room for one and the only screen everybody sees. Once a link is checked this is
+       replaced by the preview, so it costs nothing on the second visit. -->
+  <section class="opening" id="opening">
+    <h1 class="opening-title" data-i18n="empty.title"></h1>
+    <p class="opening-lede" data-i18n="empty.lede"></p>
+  </section>
+
   <form id="url-form" class="field" autocomplete="off" novalidate>
     <label class="label" for="url" data-i18n="url.label"></label>
     <div class="input-row">
@@ -74,6 +82,13 @@
     <p id="url-hint" class="hint" data-i18n="url.hint"></p>
     <button type="submit" id="fetch" class="btn btn-primary" data-i18n="action.check"></button>
   </form>
+
+  <!-- Built from /api/health, so it states what this build genuinely supports rather
+       than what the markup was last told. -->
+  <section class="can" id="can" hidden>
+    <h2 class="can-title" data-i18n="empty.canTitle"></h2>
+    <ul class="can-list" id="can-list"></ul>
+  </section>
 
   <section id="preview" class="card" hidden aria-live="polite">
     <div class="media">

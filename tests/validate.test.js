@@ -39,6 +39,7 @@ test('accepts a link from every supported platform', () => {
     ['https://b23.tv/abc', 'bilibili'],
     ['https://kick.com/someone/videos/abc', 'kick'],
     ['https://odysee.com/@channel/video', 'odysee'],
+    ['https://rumble.com/v6r1abc-a-video.html', 'rumble'],
     ['https://soundcloud.com/artist/track', 'soundcloud'],
     ['https://artist.bandcamp.com/track/name', 'bandcamp'],
     ['https://www.mixcloud.com/user/show/', 'mixcloud'],
@@ -211,4 +212,115 @@ test('safeFilename strips path and reserved characters', () => {
   assert.equal(safeFilename('', 'mp4'), 'steading.mp4');
   assert.equal(safeFilename('   ...   ', 'mp4'), 'steading.mp4');
   assert.ok(safeFilename('x'.repeat(500), 'mp4').length <= 125);
+});
+
+test('universal mode never reaches the machine own network', () => {
+  // With an allowlist the question never arose: only two dozen public video sites ever
+  // reached yt-dlp. Universal mode removes that, and over the /live tunnel the app is
+  // reachable by anyone with the link -- so an unguarded universal mode is a way for a
+  // stranger to fetch whatever is listening inside the presenter's network.
+  const internal = [
+    'http://127.0.0.1:8080/x',
+    'http://localhost/x',
+    'http://192.168.1.1/',
+    'http://10.0.0.5/',
+    'http://172.16.0.1/',
+    'http://172.31.255.254/',
+    'http://169.254.169.254/latest/meta-data/',   // cloud metadata
+    'http://[::1]/x',
+    'http://router/',                              // single label: intranet name
+    'http://nas.local/',
+    'http://100.64.0.1/',                          // carrier-grade NAT
+    'http://0.0.0.0/',
+  ];
+
+  for (const url of internal) {
+    const r = validateUrl(url, { universal: true });
+    assert.equal(r.ok, false, `universal mode accepted an internal address: ${url}`);
+  }
+
+  // And the point of universal mode still works.
+  for (const url of ['https://some-unlisted-site.example/video', 'https://vimeo.com/123']) {
+    assert.equal(validateUrl(url, { universal: true }).ok, true, `universal mode rejected ${url}`);
+  }
+});
+
+test('a public name that resolves onto the local network is refused', async () => {
+  // isPrivateHost() reads the hostname as typed, so it stops "192.168.1.1" and misses
+  // "192.168.1.1.nip.io" -- an ordinary public name whose DNS answers with that same
+  // private address. Over the /live tunnel that is the shape that matters: a name the
+  // visitor controls, pointed wherever they like inside the network this runs in.
+  const { resolvesPrivately } = await import('../server/lib/resolve-guard.js');
+  const { isPrivateHost } = await import('../server/lib/validate.js');
+
+  // The name itself looks entirely unremarkable.
+  assert.equal(isPrivateHost('192.168.1.1.nip.io'), false,
+    'the name alone should not look private -- that is the whole point');
+
+  // Resolution is what gives it away. Skipped rather than failed when there is no DNS:
+  // a machine with no network must not turn this into a red suite.
+  let reachable = true;
+  try {
+    const { lookup } = await import('node:dns/promises');
+    await lookup('archive.org');
+  } catch {
+    reachable = false;
+  }
+  if (!reachable) return;
+
+  for (const host of ['192.168.1.1.nip.io', '127.0.0.1.nip.io', '10.0.0.1.nip.io']) {
+    assert.equal(await resolvesPrivately(host), true, `${host} resolves privately and must be refused`);
+  }
+
+  // And a genuine public host still gets through.
+  assert.equal(await resolvesPrivately('archive.org'), false, 'archive.org should be allowed');
+
+  // A name that does not resolve at all is not worth spawning a subprocess for.
+  assert.equal(await resolvesPrivately('definitely-not-a-real-host-9x8y7z.invalid'), true);
+});
+
+test('a redirect that lands on the local network is refused', async () => {
+  // resolve-guard settles where the typed name points; it says nothing about where that
+  // name forwards to. A public host can answer 302 with Location: http://192.168.1.1/,
+  // and yt-dlp follows redirects, so the fetch would land inside the network anyway.
+  //
+  // The test brings its own redirector rather than reaching for one on the internet: a
+  // suite that fails when a third party is down is a suite people learn to ignore.
+  const { redirectsInward } = await import('../server/lib/redirect-guard.js');
+  const { createServer } = await import('node:http');
+
+  const TARGETS = {
+    '/to-lan': 'http://192.168.1.1/admin',
+    '/to-loopback': 'http://127.0.0.1:9/secret',
+    '/to-metadata': 'http://169.254.169.254/latest/meta-data/',
+    '/to-scheme': 'file:///etc/passwd',
+    '/chain': '/to-lan',
+    '/to-public': 'https://example.com/',
+  };
+
+  const server = createServer((req, res) => {
+    const path = req.url.split('?')[0];
+    if (TARGETS[path]) {
+      res.writeHead(302, { Location: TARGETS[path] });
+      return res.end();
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end('<html></html>');
+  });
+
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+
+  try {
+    for (const path of ['/to-lan', '/to-loopback', '/to-metadata', '/to-scheme', '/chain']) {
+      assert.equal(await redirectsInward(`${base}${path}`), true,
+        `${path} forwards inward and must be refused`);
+    }
+
+    // A redirect to somewhere genuinely public is not the thing being stopped, and a
+    // page that does not redirect at all must pass untouched.
+    assert.equal(await redirectsInward(`${base}/plain`), false);
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
 });

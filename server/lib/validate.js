@@ -47,6 +47,7 @@ const PLATFORMS = [
   { id: 'bilibili',     label: 'Bilibili',     hosts: ['bilibili.com', 'b23.tv'] },
   { id: 'kick',         label: 'Kick',         hosts: ['kick.com'] },
   { id: 'odysee',       label: 'Odysee',       hosts: ['odysee.com', 'lbry.tv'] },
+  { id: 'rumble',       label: 'Rumble',       hosts: ['rumble.com'] },
   { id: 'soundcloud',   label: 'SoundCloud',   hosts: ['soundcloud.com', 'snd.sc'], audio: true },
   { id: 'bandcamp',     label: 'Bandcamp',     hosts: ['bandcamp.com'], audio: true },
   { id: 'mixcloud',     label: 'Mixcloud',     hosts: ['mixcloud.com'], audio: true },
@@ -197,6 +198,60 @@ function matchPlatform(hostname) {
  * @param {{universal?: boolean}} [options] `universal` lets an unlisted host through --
  *   see config.universal for what that trades away, and what it does not.
  */
+/**
+ * Is this hostname somewhere on the machine's own network rather than out on the web?
+ *
+ * Only consulted for hosts that are not on the allowlist, so the listed sites are
+ * unaffected -- this exists solely to keep universal mode pointed outward.
+ *
+ * Deliberately refuses names it cannot classify: a bare label with no dot is an intranet
+ * name far more often than a site, and being wrong in that direction costs a rejected
+ * paste rather than an internal service fetched by a stranger.
+ *
+ * This is not a complete defence and should not be described as one. A public hostname
+ * whose DNS answers with 10.x still resolves after this check passes; catching that
+ * needs resolution before the fetch, which is a different piece of work. What it does
+ * close is the direct case, which is the one somebody types.
+ */
+export function isPrivateHost(hostname) {
+  const host = hostname.toLowerCase().replace(/\.$/, '');
+
+  // Bracketed IPv6 arrives from new URL() without brackets, but be defensive.
+  const bare = host.replace(/^\[|\]$/g, '');
+
+  if (bare === 'localhost' || bare.endsWith('.localhost')) return true;
+
+  // Names that are internal by convention or by RFC.
+  if (/\.(local|internal|intranet|localdomain|home|lan|corp|private)$/.test(bare)) return true;
+
+  // A single label with no dot: intranet host, not a site.
+  if (!bare.includes('.') && !bare.includes(':')) return true;
+
+  // IPv6 loopback, link-local (fe80::/10) and unique local (fc00::/7).
+  if (bare === '::1' || bare === '::') return true;
+  if (/^f[cd][0-9a-f]{2}:/.test(bare)) return true;
+  if (/^fe[89ab][0-9a-f]:/.test(bare)) return true;
+  // An IPv4 address mapped into IPv6 still points where the IPv4 does.
+  const mapped = bare.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (mapped) return isPrivateHost(mapped[1]);
+
+  const v4 = bare.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!v4) return false;
+
+  const [a, b] = [Number(v4[1]), Number(v4[2])];
+  if (v4.slice(1).some((n) => Number(n) > 255)) return true;   // not an address at all
+
+  if (a === 0 || a === 127) return true;                        // this host
+  if (a === 10) return true;                                    // private
+  if (a === 172 && b >= 16 && b <= 31) return true;             // private
+  if (a === 192 && b === 168) return true;                      // private
+  if (a === 169 && b === 254) return true;                      // link-local, incl. metadata
+  if (a === 100 && b >= 64 && b <= 127) return true;            // carrier-grade NAT
+  if (a >= 224) return true;                                    // multicast and reserved
+
+  return false;
+}
+
 export function validateUrl(input, { universal = false } = {}) {
   if (typeof input !== 'string') return { ok: false, code: ERR.URL_NOT_TEXT };
 
@@ -232,6 +287,11 @@ export function validateUrl(input, { universal = false } = {}) {
     // to reach the same answer.
     if (locked) return { ok: false, code: ERR.URL_SITE_LOCKED, detail: locked.label };
     if (!universal) return { ok: false, code: ERR.URL_UNSUPPORTED_SITE };
+
+    // Universal mode means an unlisted host reaches yt-dlp. It must still be a host out
+    // on the web: without this, the app is a way to fetch whatever is listening inside
+    // the network it runs in, which over the /live tunnel means anyone with the link.
+    if (isPrivateHost(url.hostname)) return { ok: false, code: ERR.URL_UNSUPPORTED_SITE };
   }
 
   // Strip credentials and the fragment; neither is useful downstream.

@@ -55,7 +55,10 @@ const en = {
   'nav.theme.dark': 'Switch to dark theme',
 
   'url.label': 'Link',
-  'url.placeholder': 'Paste a video or audio link',
+  'empty.title': 'What would you like to keep?',
+  'empty.lede': 'Paste a link. The file is written straight to this computer, and nothing you paste leaves it.',
+  'empty.canTitle': 'This copy can save',
+  'url.placeholder': 'Paste any link — video, audio or photos',
   'url.hint': 'The server runs on this device. Nothing is sent anywhere.',
   'url.supports': "Works with {list}.",
   'url.supportsSome': 'Works with {list} and {n} more.',
@@ -160,7 +163,10 @@ const id = {
   'nav.theme.dark': 'Ganti ke tema gelap',
 
   'url.label': 'Tautan',
-  'url.placeholder': 'Tempel tautan video atau audio',
+  'empty.title': 'Apa yang ingin Anda simpan?',
+  'empty.lede': 'Tempel sebuah tautan. Berkasnya ditulis langsung ke komputer ini, dan apa pun yang Anda tempel tidak keluar dari sini.',
+  'empty.canTitle': 'Salinan ini bisa menyimpan',
+  'url.placeholder': 'Tempel tautan apa pun — video, audio, atau foto',
   'url.hint': 'Server berjalan di perangkat ini. Tidak ada data yang dikirim ke mana pun.',
   'url.supports': "Mendukung {list}.",
   'url.supportsSome': 'Mendukung {list} dan {n} situs lainnya.',

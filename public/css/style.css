@@ -242,6 +242,20 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  /* Top-aligned, now that there is something here to align.
+     
+     This used to be centred, and the reasoning was sound at the time: the form alone is
+     about 200 px inside a 740 px window, and clinging to the top left two thirds of the
+     display blank. But centring only moved that emptiness -- it split it above and
+     below instead of pooling it underneath, and a form floating in the middle of a bare
+     screen reads as abandoned rather than as composed.
+     
+     The actual defect was that the first screen carried no content, not that the
+     content sat in the wrong place. With the opening lines and the capability list
+     above and below the form, the column fills honestly and the top is where it
+     belongs. */
+  justify-content: flex-start;
 }
 
 .field { display: flex; flex-direction: column; gap: 8px; }
@@ -302,6 +316,7 @@ input[type="url"][aria-invalid="true"] { border-color: var(--danger); }
    44px box here would tear a hole in the paragraph, so it keeps the line's own height;
    the label is two or three words wide, which is a comfortable target on a phone. */
 .btn-inline {
+  position: relative;
   margin-inline-start: 4px;
   padding: 2px 4px;
   font: inherit;
@@ -312,6 +327,17 @@ input[type="url"][aria-invalid="true"] { border-color: var(--danger); }
   border-radius: 5px;
   cursor: pointer;
   white-space: nowrap;
+}
+
+/* The touchable area is larger than the ink.
+   This control sits inside a sentence, so it cannot simply be made 44 px tall without
+   pushing the line apart. Measured on a 360 px phone it was 24 px high, which a
+   fingertip misses. The overlay extends what responds to a tap while the text stays
+   exactly where the sentence needs it. */
+.btn-inline::after {
+  content: "";
+  position: absolute;
+  inset: -11px -10px;
 }
 .btn-inline:hover { color: var(--accent-hover); }
 
@@ -724,4 +750,89 @@ input[type="url"][aria-invalid="true"] { border-color: var(--danger); }
 }
 .picture input[type="range"]:focus-visible::-moz-range-thumb {
   box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+/* ------------------------------------------------------------- opening screen */
+
+.opening { margin-bottom: 4px; }
+
+.opening-title {
+  margin: 0 0 8px;
+  font-size: clamp(24px, 6.5vw, 32px);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.opening-lede {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-width: 46ch;
+}
+
+/* ----------------------------------------------------------- what it can save */
+
+.can { margin-top: 8px; }
+
+.can-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.can-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+
+.can-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+.can-kind {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 4.5em;
+}
+
+.can-formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.can-formats span {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* One entrance, on the screen that is otherwise still. Transform and opacity only, so
+     nothing reflows and it stays cheap on a phone. */
+  .opening, .can-row {
+    animation: opening-in .45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .can-row:nth-child(2) { animation-delay: .06s; }
+  .can-row:nth-child(3) { animation-delay: .12s; }
+
+  @keyframes opening-in {
+    from { opacity: 0; transform: translate3d(0, 8px, 0); }
+    to { opacity: 1; transform: none; }
+  }
 }

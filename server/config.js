@@ -50,17 +50,31 @@ export const config = {
   /**
    * Universal mode: hand any http(s) link to yt-dlp instead of only the listed sites.
    *
-   * Off unless `UNIVERSAL=1` is set, and that default is deliberate. The allowlist is
-   * this project's security boundary, not a feature list -- it is what guarantees that
-   * a page in another tab cannot walk the local server through yt-dlp's thousand-odd
-   * extractors. Turning this on trades that guarantee for reach.
+   * On by default. `UNIVERSAL=0` turns it off.
    *
-   * What does *not* change when it is on, because those are the defences that still
-   * hold: no shell, argv arrays only, `--` before the URL, the loopback bind, and the
-   * Host check. A universal link is still parsed by `new URL`, still restricted to
-   * http and https, and still refused if it names a site in LOCKED.
+   * It was off, and the argument for that was real: the allowlist was the boundary that
+   * kept a page in another tab from walking the local server through yt-dlp's thousand-
+   * odd extractors. What changed is that the boundary no longer rests on the list.
+   * `isPrivateHost()` in lib/validate.js now refuses loopback, the private ranges,
+   * link-local (including the cloud metadata address), carrier-grade NAT and bare
+   * single-label intranet names -- so an unlisted host has to be somewhere out on the
+   * public web before it reaches a subprocess at all.
+   *
+   * The rest of the defences are unchanged and still doing the work: no shell, argv
+   * arrays only, `--` before the URL, the loopback bind, and the Host check. A universal
+   * link is still parsed by `new URL`, still restricted to http and https, and still
+   * refused if it names a site in LOCKED.
+   *
+   * What this genuinely trades is certainty about *quality*. The catalogue at /sites
+   * lists two dozen sites with evidence behind each; universal mode accepts roughly
+   * 1,750 that nobody has tried. Accepting a link is not a promise that it will work,
+   * and the interface says so rather than implying otherwise.
+   *
+   * One limit worth stating plainly: this checks the hostname as typed. A public name
+   * whose DNS answers with a private address still resolves after the check passes.
+   * Closing that needs resolution before the fetch, which is separate work.
    */
-  universal: process.env.UNIVERSAL === '1',
+  universal: process.env.UNIVERSAL !== '0',
 
   /**
    * Where a post's pictures are looked for, in order, until one provider returns some.
