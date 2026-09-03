@@ -13,6 +13,7 @@ import { config } from './config.js';
 import { guardProxyUrl } from './lib/guard-proxy.js';
 import { formatInfo, pictureQuality } from './lib/validate.js';
 import { scrapeImages } from './lib/scrape.js';
+import { scrapeVideo } from './lib/videosrc.js';
 import { downloadImages, convertArgs, isJpeg } from './lib/gallery.js';
 import { imagesToPdf } from './lib/pdf.js';
 import { createLineSplitter, parseLine } from './lib/progress.js';
@@ -209,13 +210,12 @@ function runInfo(bin, url, impersonate, proxy) {
 }
 
 /**
- * @param {string} url
- * @param {{guard?: boolean}} [options] `guard` sends the request through the loopback
- *   proxy, which resolves the name and connects to that address itself. Used for hosts
- *   that are not on the list, where the checks upstream can only look and then hope
- *   nothing changed before yt-dlp went and looked for itself.
+ * Ask yt-dlp what is at this address.
+ *
+ * The primary source, and the best one: around 1,750 per-site extractors under a single
+ * test suite. It is not the only one, which is the point of the chain below.
  */
-export async function fetchInfo(url, { guard = false } = {}) {
+async function ytdlpInfo(url, guard) {
   const bin = requireYtdlp();
   const proxy = guard ? await guardProxyUrl() : undefined;
 
@@ -238,6 +238,125 @@ export async function fetchInfo(url, { guard = false } = {}) {
   } catch {
     throw coded(ERR.INFO_UNREADABLE);
   }
+}
+
+/**
+ * Ask streamlink instead.
+ *
+ * A wholly separate project with its own extractors, so the sites it knows and the sites
+ * it fails on are a different set from yt-dlp's. That independence is the entire reason
+ * it is here: a second implementation of the same idea is worth far more than a second
+ * copy of the first one.
+ *
+ * Optional. A machine without it simply skips this link.
+ */
+function streamlinkInfo(url) {
+  const bin = config.streamlink;
+  if (!bin) return Promise.resolve(null);
+
+  return new Promise((resolvePromise) => {
+    execFile(bin, ['--json', '--', url], {
+      timeout: 45_000, maxBuffer: 4 * 1024 * 1024, windowsHide: true,
+    }, (err, stdout) => {
+      if (!stdout) return resolvePromise(null);
+      try {
+        const data = JSON.parse(String(stdout));
+        const names = Object.keys(data.streams || {});
+        if (!names.length) return resolvePromise(null);
+
+        // streamlink names streams by height ("720p", "best"); the numbers are what the
+        // picker needs and the words are what it cannot use.
+        const heights = names
+          .map((n) => Number((n.match(/^(\d{3,4})p/) || [])[1]))
+          .filter(Boolean)
+          .sort((a, b) => b - a);
+
+        resolvePromise({
+          title: data.metadata?.title || null,
+          uploader: data.metadata?.author || null,
+          duration: null,
+          thumbnail: null,
+          extractor: 'streamlink',
+          isLive: false,
+          hasVideo: true,
+          qualities: ['best', ...heights.map(String)],
+        });
+      } catch {
+        resolvePromise(null);
+      }
+    });
+  });
+}
+
+/**
+ * Read the page itself.
+ *
+ * The last link, and the one that cannot be uninstalled: no binary, no package, nothing
+ * to keep up to date. It will never get YouTube, and it will get the long tail that no
+ * per-site extractor is ever written for.
+ */
+async function scrapedInfo(url) {
+  const found = await scrapeVideo(url);
+  if (!found) return null;
+
+  return {
+    title: found.title,
+    uploader: null,
+    duration: null,
+    thumbnail: found.thumbnail,
+    extractor: 'page',
+    isLive: false,
+    hasVideo: true,
+    // Nothing on the page states a height, and inventing one would be a lie the picker
+    // would then offer as a choice.
+    qualities: ['best'],
+    // Carried so the download path can fetch these directly rather than looking again.
+    directSources: found.direct,
+  };
+}
+
+/**
+ * Try each configured source until one answers.
+ *
+ * The court's auditor called the single-source dependency a high risk and was right.
+ * The chain is the answer to it: three independent implementations, none required, tried
+ * in the order set by VIDEO_PROVIDERS. The suggested alternative -- hundreds of per-site
+ * packages -- would have replaced one well-tested source with hundreds of unmaintained
+ * ones, and put every one of them on a machine whose promise is that nothing untrusted
+ * runs there.
+ *
+ * The first real error is kept: if every source fails, the reader should be told why the
+ * best one failed, not that a page scraper found no video tag.
+ *
+ * @param {string} url
+ * @param {{guard?: boolean}} [options] `guard` sends the request through the loopback
+ *   proxy, which resolves the name and connects to that address itself.
+ */
+export async function fetchInfo(url, { guard = false } = {}) {
+  const providers = {
+    ytdlp: () => ytdlpInfo(url, guard),
+    streamlink: () => streamlinkInfo(url),
+    scrape: () => scrapedInfo(url),
+  };
+
+  let firstError = null;
+
+  for (const name of config.videoProviders) {
+    const provider = providers[name];
+    if (!provider) continue; // an unknown name in the env var is ignored, not fatal
+
+    try {
+      const info = await provider();
+      if (info) return info;
+    } catch (err) {
+      // A missing yt-dlp is a broken install, not an unsupported page: say so at once
+      // rather than letting a scraper produce a confusing answer instead.
+      if (err.code === ERR.NO_BINARY) throw err;
+      firstError ??= err;
+    }
+  }
+
+  throw firstError ?? coded(ERR.INFO_UNREADABLE);
 }
 
 /**

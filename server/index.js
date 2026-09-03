@@ -429,7 +429,7 @@ warmVersions();
 server.listen(config.port, config.host, () => {
   const url = `http://${config.host === '0.0.0.0' ? 'localhost' : config.host}:${config.port}`;
   console.log('');
-  console.log('  Steading  ·  Fast. Seamless. 100% Local.');
+  console.log('  Steading  ·  Nothing is uploaded.');
   console.log(`  ${url}`);
   if (!config.ytdlp) console.log('  ! yt-dlp is not installed -- run: npm run check');
   else if (!config.ffmpeg) console.log('  ! ffmpeg is not installed -- MP3 and video merging will fail');

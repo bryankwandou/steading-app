@@ -45,6 +45,13 @@ export const config = {
    */
   gallerydl: resolveBinary('gallery-dl', 'GALLERYDL_PATH'),
 
+  /**
+   * streamlink, if it happens to be installed. A separate project with its own
+   * extractors, so the sites it handles are a different set from yt-dlp's -- which is
+   * the whole reason it is worth having. Never required.
+   */
+  streamlink: resolveBinary('streamlink', 'STREAMLINK_PATH'),
+
   host: process.env.HOST || '127.0.0.1',
 
   /**
@@ -93,6 +100,14 @@ export const config = {
    * The order is a preference, not a ranking of quality -- put `gallerydl` first if you
    * have it and mostly grab social posts. Set `IMAGE_PROVIDERS=scrape` to pin it to one.
    */
+
+  /**
+   * Where to look for a video, in order, until one answers. A preference rather than a
+   * ranking: none is required, and a source that is not installed contributes nothing
+   * instead of failing the request.
+   */
+  videoProviders: (process.env.VIDEO_PROVIDERS || 'ytdlp,streamlink,scrape')
+    .split(',').map((s) => s.trim()).filter(Boolean),
   imageProviders: (process.env.IMAGE_PROVIDERS || 'gallerydl,scrape,ytdlp')
     .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
 

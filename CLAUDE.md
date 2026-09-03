@@ -1,6 +1,6 @@
 # Steading
 
-> Fast. Seamless. 100% Local.
+> Nothing is uploaded.
 
 Video & audio downloader for 25 sites -- YouTube, TikTok, Instagram, Facebook, Twitch,
 Vimeo, Dailymotion, Reddit, Pinterest, Snapchat, Bluesky, Tumblr, Telegram, VK, Weibo,

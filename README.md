@@ -1,6 +1,6 @@
 # Steading
 
-**Fast. Seamless. 100% Local.**
+**Nothing is uploaded.**
 
 Pengunduh video dan audio dari **25 situs** — YouTube, TikTok, Instagram, Facebook,
 Twitch, Vimeo, Reddit, Bluesky, Bilibili, SoundCloud dan seterusnya — yang berjalan

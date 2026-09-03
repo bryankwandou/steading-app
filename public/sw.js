@@ -7,7 +7,7 @@
  * state would be actively wrong.
  */
 
-const VERSION = 'steading-v5';
+const VERSION = 'steading-app-a0837003078f'; // rewritten by scripts/stamp-sw.js
 
 const SHELL = [
   '/',

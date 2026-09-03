@@ -1,20 +1,21 @@
 {
   "name": "steading",
   "version": "1.0.0",
-  "description": "Steading - Fast. Seamless. 100% Local. A local-first video & audio downloader PWA.",
+  "description": "Save video, audio and photos from 1,752 sites onto your own machine. The program runs on your computer, so no file and no link is ever sent to a third party.",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "start": "node server/index.js",
+    "start": "node scripts/stamp-sw.js && node server/index.js",
     "check": "node scripts/check-deps.js",
     "icons": "node scripts/make-icons.js",
     "test": "node --test --experimental-test-module-mocks tests/*.test.js",
-    "universal": "node scripts/universal.js",
+    "universal": "node scripts/stamp-sw.js && node scripts/universal.js",
     "share": "node scripts/share.js",
-    "live": "node scripts/publish-live.js"
+    "live": "node scripts/publish-live.js",
+    "stamp": "node scripts/stamp-sw.js"
   },
   "dependencies": {},
   "devDependencies": {}
