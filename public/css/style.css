@@ -836,3 +836,78 @@ input[type="url"][aria-invalid="true"] { border-color: var(--danger); }
     to { opacity: 1; transform: none; }
   }
 }
+
+/* ============================================================ the craft pass */
+
+/*
+ * The screen was correct and flat. Everything sat at one visual weight, so nothing on it
+ * said which part mattered, and a page where every element is equally loud reads as
+ * unfinished even when every rule has been followed.
+ *
+ * Three changes, no new colours -- all of it from the tokens already defined above.
+ */
+
+/* --- 1. the field is the one thing you do here, so it looks like it ------- */
+
+/* Lifted onto its own surface with a hairline and a shadow. The rest of the column is
+   flat, which is what makes this read as the object rather than as another row. */
+.field {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lift);
+}
+
+/* --- 2. the kinds are told apart by more than their labels --------------- */
+
+/* A four-pixel edge in the accent, and nothing else: the rows still read as one family,
+   but the eye can find "Photo" without reading three words first. Kept to the accent
+   rather than three hues, because inventing a colour per kind would be decoration
+   pretending to be information. */
+.can-row {
+  position: relative;
+  padding-left: 16px;
+  overflow: hidden;
+}
+
+.can-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  opacity: .28;
+}
+
+.can-row:nth-child(2)::before { opacity: .5; }
+.can-row:nth-child(3)::before { opacity: .78; }
+
+/* --- 3. rhythm ----------------------------------------------------------- */
+
+/* The opening was the same size as everything under it. A page needs one element that is
+   plainly first; clamp keeps it from swallowing a narrow screen. */
+.opening-title { font-weight: 680; }
+
+.opening + .field { margin-top: 6px; }
+
+/* The status line at the foot is information, not furniture, and was reading as heavier
+   than the format list above it. */
+.foot-text { font-size: 12.5px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The field settles a moment after the words above it, so the eye is led down the
+     column in the order it should be read. Transform and opacity only. */
+  .field { animation: opening-in .5s cubic-bezier(0.22, 1, 0.36, 1) .08s both; }
+}
+
+/* ------------------------------------------------------------- wider screens */
+
+/* Above the phone the column can afford more air. Below it the tokens already fit, so
+   nothing here touches the narrow case. */
+@media (min-width: 720px) {
+  .app { padding-top: 44px; gap: 20px; }
+  .opening-lede { font-size: 15.5px; }
+}
