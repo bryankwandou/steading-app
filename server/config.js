@@ -108,7 +108,7 @@ export const config = {
    */
   videoProviders: (process.env.VIDEO_PROVIDERS || 'ytdlp,streamlink,scrape')
     .split(',').map((s) => s.trim()).filter(Boolean),
-  imageProviders: (process.env.IMAGE_PROVIDERS || 'gallerydl,scrape,ytdlp')
+  imageProviders: (process.env.IMAGE_PROVIDERS || 'gallerydl,scrape,oembed,ytdlp')
     .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
 
   /** How many pictures one post may contribute, so a 400-image board cannot run away. */

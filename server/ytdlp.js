@@ -14,6 +14,7 @@ import { guardProxyUrl } from './lib/guard-proxy.js';
 import { formatInfo, pictureQuality } from './lib/validate.js';
 import { scrapeImages } from './lib/scrape.js';
 import { scrapeVideo } from './lib/videosrc.js';
+import { oembedPictures } from './lib/oembed.js';
 import { downloadImages, convertArgs, isJpeg } from './lib/gallery.js';
 import { imagesToPdf } from './lib/pdf.js';
 import { createLineSplitter, parseLine } from './lib/progress.js';
@@ -641,18 +642,49 @@ async function collectImageUrls(url, emit) {
   const providers = {
     gallerydl: () => galleryDlUrls(url),
     scrape: () => scrapeImages(url, { limit: config.maxImagesPerJob }),
+    // Reaches the pages a scraper cannot: a site that assembles its posts in the browser
+    // hands the scraper an empty shell and still answers an oEmbed request properly.
+    // Returns the post's cover, not its whole carousel -- worth having, not the same
+    // thing, and the interface says which it got.
+    oembed: () => oembedPictures(url),
     ytdlp: () => ytdlpThumbnail(url),
   };
+
+  // Every provider contributes; the chain does not stop at the first one that returns
+  // something.
+  //
+  // It used to, and that was wrong for a reason worth keeping written down: returning
+  // addresses is not the same as returning pictures. Instagram's logged-out shell yields
+  // 28 addresses to the scraper, every one of them interface furniture, so the chain
+  // handed back 28 candidates, never consulted the source that had the actual photo, and
+  // the job downloaded 28 files before failing with no_image. Measured exactly that way.
+  //
+  // Gathering from all of them costs at most one extra request each on a job already
+  // measured in seconds, and the candidates are filtered and capped downstream anyway.
+  const seen = new Set();
+  const all = [];
+
+  emit({ type: 'phase', phase: 'extracting' });
 
   for (const name of config.imageProviders) {
     const provider = providers[name];
     if (!provider) continue; // an unknown name in the env var is ignored, not fatal
 
-    emit({ type: 'phase', phase: 'extracting' });
-    const found = await provider();
-    if (found.length) return found.slice(0, config.maxImagesPerJob);
+    let found = [];
+    try {
+      found = await provider();
+    } catch {
+      continue; // a provider that fails steps aside; it does not end the request
+    }
+
+    for (const url of found) {
+      if (seen.has(url)) continue;
+      seen.add(url);
+      all.push(url);
+    }
   }
-  return [];
+
+  return all.slice(0, config.maxImagesPerJob);
 }
 
 /**
