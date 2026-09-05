@@ -16,7 +16,8 @@
     "share": "node scripts/share.js",
     "live": "node scripts/publish-live.js",
     "stamp": "node scripts/stamp-sw.js",
-    "coverage": "node scripts/coverage.mjs"
+    "coverage": "node scripts/coverage.mjs",
+    "compare": "bash scripts/compare.sh"
   },
   "dependencies": {},
   "devDependencies": {}
