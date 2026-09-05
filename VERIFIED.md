@@ -26,6 +26,33 @@ which is what happened to Pinterest and Tumblr on the first pass.
 | Tumblr | `bogleech.tumblr.com/post/826707613076111360` | pictures | 1 page, source `page` |
 | Xiaohongshu | `xiaohongshu.com` | pictures | 31 pages, source `page` |
 
+## Opened by gallery-dl, installed 2026-09-05
+
+gallery-dl was named first in the image chain in config.js and had never been installed,
+so that link never ran. `python` on the PATH turned out to be a 111-byte Microsoft Store
+stub, which made every `pip install` exit 0 and install nothing. Installed through the
+real interpreter, it brings roughly 960 image extractors.
+
+| Platform | Link tested | Result |
+|---|---|---|
+| Flickr | `flickr.com/photos/bogush/55505670425` | 5 pictures |
+| Imgur | `imgur.com/gallery/eat-rich-oHUgoIP` | 3 pictures |
+| ArtStation | `artstation.com/artwork/b0lK6E` | 1 picture |
+| Wikimedia Commons | `commons.wikimedia.org/wiki/File:The_A5_-_geograph.org.uk_-_7676796.jpg` | 19 pictures |
+
+None of these four were in the 23 the site lists.
+
+## Refused by the source, with the reason it gave
+
+| Platform | What gallery-dl reported |
+|---|---|
+| Unsplash | `HttpError: 403 Forbidden` on its own API |
+| Pixabay | `Unsupported URL` — no extractor for that address form |
+| Reddit | `You've been blocked by network security` |
+
+Recorded as refusals from the far end rather than as faults here, because that is what
+the tool itself says when asked directly.
+
 ## Fails upstream, in yt-dlp itself
 
 | Platform | Error |
