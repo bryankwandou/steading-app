@@ -78,6 +78,7 @@
   "error.info_unreadable": "無法從這個連結讀到任何資訊。",
   "error.is_live": "尚未支援直播。",
   "error.private_content": "這是私人內容或需要登入，因此無法下載。",
+  "error.cookie_db_locked": "瀏覽器正佔用其 Cookie 檔案。請關閉瀏覽器後再試一次。",
   "error.content_gone": "找不到。可能已被刪除，或連結有誤。",
   "error.geo_blocked": "這項內容僅限特定地區。",
   "error.network": "連線有問題。請檢查網路後再試一次。",

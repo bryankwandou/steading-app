@@ -78,6 +78,7 @@
   "error.info_unreadable": "このリンクから情報を読み取れませんでした。",
   "error.is_live": "ライブ配信にはまだ対応していません。",
   "error.private_content": "非公開、またはログインが必要なため、ダウンロードできません。",
+  "error.cookie_db_locked": "ブラウザーが Cookie ファイルを開いたままにしています。閉じてからもう一度お試しください。",
   "error.content_gone": "見つかりませんでした。削除されたか、リンクが間違っている可能性があります。",
   "error.geo_blocked": "これは特定の地域に制限されています。",
   "error.network": "接続に問題があります。ネットワークを確認してもう一度お試しください。",

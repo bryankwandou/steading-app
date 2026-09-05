@@ -106,6 +106,25 @@ export const config = {
    * ranking: none is required, and a source that is not installed contributes nothing
    * instead of failing the request.
    */
+  /**
+   * A browser to read the current session from, or null.
+   *
+   * Some sites -- Douyin is the clearest case -- serve nothing at all without a signed-in
+   * session, and no amount of scraping gets past that. yt-dlp can read the session out of
+   * a browser profile on this machine, which is the only form of that capability this
+   * project can honestly offer.
+   *
+   * Off unless someone sets STEADING_COOKIES_FROM_BROWSER, because a downloader that
+   * silently attaches your identity to outbound requests is a different and much worse
+   * program than this one. When it is set, the cookies are read locally by yt-dlp on the
+   * machine the operator controls and are never transmitted anywhere by this software --
+   * which is the whole reason it is acceptable here and would not be on a hosted service.
+   *
+   * Accepts what yt-dlp accepts: chrome, firefox, edge, brave, opera, vivaldi, safari,
+   * chromium, optionally with a profile -- for example "firefox:default-release".
+   */
+  cookiesFromBrowser: process.env.STEADING_COOKIES_FROM_BROWSER || null,
+
   videoProviders: (process.env.VIDEO_PROVIDERS || 'ytdlp,streamlink,scrape')
     .split(',').map((s) => s.trim()).filter(Boolean),
   imageProviders: (process.env.IMAGE_PROVIDERS || 'gallerydl,scrape,oembed,ytdlp')

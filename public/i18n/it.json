@@ -78,6 +78,7 @@
   "error.info_unreadable": "Non è stato possibile leggere alcun dato da questo link.",
   "error.is_live": "Le dirette non sono ancora supportate.",
   "error.private_content": "Questo contenuto è privato o richiede il login, quindi non può essere scaricato.",
+  "error.cookie_db_locked": "Il browser tiene aperto il file dei cookie. Chiudilo e riprova.",
   "error.content_gone": "Non trovato. Potrebbe essere stato rimosso, oppure il link è sbagliato.",
   "error.geo_blocked": "Questo contenuto è limitato ad alcune regioni.",
   "error.network": "Problema di connessione. Controlla la rete e riprova.",

@@ -78,6 +78,7 @@
   "error.info_unreadable": "Bu bağlantıdan hiçbir bilgi okunamadı.",
   "error.is_live": "Canlı yayınlar henüz desteklenmiyor.",
   "error.private_content": "Bu içerik gizli ya da giriş gerektiriyor, bu yüzden indirilemez.",
+  "error.cookie_db_locked": "Tarayıcınız çerez dosyasını açık tutuyor. Tarayıcıyı kapatıp yeniden deneyin.",
   "error.content_gone": "Bulunamadı. Kaldırılmış olabilir ya da bağlantı yanlış olabilir.",
   "error.geo_blocked": "Bu içerik belirli bölgelerle sınırlı.",
   "error.network": "Bağlantı sorunu. Ağınızı kontrol edip tekrar deneyin.",

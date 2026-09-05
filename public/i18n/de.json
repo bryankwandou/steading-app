@@ -78,6 +78,7 @@
   "error.info_unreadable": "Aus diesem Link ließen sich keine Angaben lesen.",
   "error.is_live": "Livestreams werden noch nicht unterstützt.",
   "error.private_content": "Das ist privat oder erfordert eine Anmeldung und kann deshalb nicht heruntergeladen werden.",
+  "error.cookie_db_locked": "Ihr Browser hält die Cookie-Datei geöffnet. Schließen Sie ihn und versuchen Sie es erneut.",
   "error.content_gone": "Nicht gefunden. Möglicherweise gelöscht, oder der Link stimmt nicht.",
   "error.geo_blocked": "Das ist auf bestimmte Regionen beschränkt.",
   "error.network": "Verbindungsproblem. Prüfe dein Netzwerk und versuche es erneut.",

@@ -78,6 +78,7 @@
   "error.info_unreadable": "No se pudo leer ningún dato de ese enlace.",
   "error.is_live": "Las transmisiones en directo todavía no son compatibles.",
   "error.private_content": "Esto es privado o requiere iniciar sesión, así que no se puede descargar.",
+  "error.cookie_db_locked": "Tu navegador mantiene abierto su archivo de cookies. Ciérralo e inténtalo de nuevo.",
   "error.content_gone": "No encontrado. Puede que se haya eliminado o que el enlace sea incorrecto.",
   "error.geo_blocked": "Esto está restringido a ciertas regiones.",
   "error.network": "Problema de conexión. Revisa tu red e inténtalo de nuevo.",

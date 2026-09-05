@@ -78,6 +78,7 @@
   "error.info_unreadable": "无法从该链接读取任何信息。",
   "error.is_live": "暂不支持直播。",
   "error.private_content": "该内容是私密的或需要登录，因此无法下载。",
+  "error.cookie_db_locked": "浏览器正占用其 Cookie 文件。请关闭浏览器后重试。",
   "error.content_gone": "未找到。可能已被删除，或链接有误。",
   "error.geo_blocked": "该内容仅限特定地区。",
   "error.network": "连接有问题。请检查网络后重试。",

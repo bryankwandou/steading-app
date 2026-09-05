@@ -78,6 +78,7 @@
   "error.info_unreadable": "Tiada maklumat yang dapat dibaca daripada pautan itu.",
   "error.is_live": "Siaran langsung belum disokong.",
   "error.private_content": "Kandungan ini peribadi atau perlu log masuk, jadi ia tidak boleh dimuat turun.",
+  "error.cookie_db_locked": "Pelayar anda sedang mengunci fail kukinya. Tutup pelayar dan cuba lagi.",
   "error.content_gone": "Tidak dijumpai. Mungkin sudah dibuang, atau pautannya salah.",
   "error.geo_blocked": "Kandungan ini terhad kepada kawasan tertentu.",
   "error.network": "Masalah sambungan. Periksa rangkaian anda dan cuba lagi.",

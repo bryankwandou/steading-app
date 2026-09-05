@@ -11,6 +11,8 @@
  */
 
 export const ERR = {
+  /** The browser holds its cookie file open, so the session could not be read. */
+  COOKIE_DB_LOCKED: 'cookie_db_locked',
   // Request shape
   BODY_TOO_LARGE: 'body_too_large',
   BAD_JSON: 'bad_json',

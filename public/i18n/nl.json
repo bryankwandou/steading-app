@@ -78,6 +78,7 @@
   "error.info_unreadable": "Er konden geen gegevens uit die link worden gelezen.",
   "error.is_live": "Livestreams worden nog niet ondersteund.",
   "error.private_content": "Dit is privé of vereist een login en kan daarom niet worden gedownload.",
+  "error.cookie_db_locked": "Je browser houdt het cookiebestand open. Sluit de browser en probeer het opnieuw.",
   "error.content_gone": "Niet gevonden. Mogelijk verwijderd, of de link klopt niet.",
   "error.geo_blocked": "Dit is beperkt tot bepaalde regio's.",
   "error.network": "Verbindingsprobleem. Controleer je netwerk en probeer het opnieuw.",

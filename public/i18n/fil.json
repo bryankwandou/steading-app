@@ -78,6 +78,7 @@
   "error.info_unreadable": "Walang mabasang impormasyon mula sa link na iyan.",
   "error.is_live": "Hindi pa suportado ang mga live stream.",
   "error.private_content": "Pribado ito o kailangan ng login, kaya hindi ito puwedeng i-download.",
+  "error.cookie_db_locked": "Nakabukas pa ang cookie file ng iyong browser. Isara ito at subukang muli.",
   "error.content_gone": "Hindi nahanap. Baka natanggal na, o mali ang link.",
   "error.geo_blocked": "Limitado ito sa ilang rehiyon lang.",
   "error.network": "May problema sa koneksyon. Tingnan ang network mo at subukan ulit.",

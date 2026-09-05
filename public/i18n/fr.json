@@ -78,6 +78,7 @@
   "error.info_unreadable": "Impossible de lire les informations de ce lien.",
   "error.is_live": "Les directs ne sont pas encore pris en charge.",
   "error.private_content": "Ce contenu est privé ou nécessite une connexion, il ne peut donc pas être téléchargé.",
+  "error.cookie_db_locked": "Votre navigateur garde son fichier de cookies ouvert. Fermez-le et réessayez.",
   "error.content_gone": "Introuvable. Le contenu a peut-être été supprimé, ou le lien est incorrect.",
   "error.geo_blocked": "Ce contenu est limité à certaines régions.",
   "error.network": "Problème de connexion. Vérifiez votre réseau et réessayez.",

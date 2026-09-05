@@ -78,6 +78,7 @@
   "error.info_unreadable": "Không đọc được thông tin nào từ liên kết này.",
   "error.is_live": "Chưa hỗ trợ phát trực tiếp.",
   "error.private_content": "Nội dung này ở chế độ riêng tư hoặc cần đăng nhập nên không tải được.",
+  "error.cookie_db_locked": "Trình duyệt đang giữ tệp cookie mở. Hãy đóng trình duyệt rồi thử lại.",
   "error.content_gone": "Không tìm thấy. Có thể đã bị xóa, hoặc liên kết sai.",
   "error.geo_blocked": "Nội dung này bị giới hạn theo khu vực.",
   "error.network": "Kết nối có vấn đề. Hãy kiểm tra mạng rồi thử lại.",

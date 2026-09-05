@@ -48,6 +48,16 @@ function baseArgs() {
     '--socket-timeout', '15',
   ];
   if (config.ffmpeg) args.push('--ffmpeg-location', config.ffmpeg);
+
+  // Read the session from a browser on this machine, when the operator has asked for it.
+  // This is the honest version of "works on sites that need a login": the cookies are
+  // read locally by yt-dlp, on the machine its owner controls, and this program never
+  // transmits them. A hosted service could not offer the same thing, which is exactly why
+  // the local half of this project is the half that can.
+  if (config.cookiesFromBrowser) {
+    args.push('--cookies-from-browser', config.cookiesFromBrowser);
+  }
+
   return args;
 }
 
@@ -173,6 +183,15 @@ export function classifyError(stderr) {
     .pop() || String(stderr || '').trim().split(/\r?\n/).pop() || '';
 
   const msg = line.replace(/^ERROR[:\s]+/i, '').replace(/^\[[^\]]+\]\s*/, '').trim();
+
+  // Before everything else, because this one is about the machine rather than the link.
+  // The generic tests below would file it under "private content", which sends the reader
+  // off to check a permission that is not the problem. Chrome and Edge hold their cookie
+  // file open while running, so a session can only be read once the browser is closed, or
+  // from one that does not lock it.
+  if (/could not copy .*cookie database|cookie database.*locked|unable to read.*cookie/i.test(msg)) {
+    return { code: ERR.COOKIE_DB_LOCKED, detail: msg };
+  }
 
   // Order matters: "not available in your country" is geo, not a missing video, so the
   // region test runs before the generic unavailable test.
