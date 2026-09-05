@@ -15,7 +15,8 @@
     "universal": "node scripts/stamp-sw.js && node scripts/universal.js",
     "share": "node scripts/share.js",
     "live": "node scripts/publish-live.js",
-    "stamp": "node scripts/stamp-sw.js"
+    "stamp": "node scripts/stamp-sw.js",
+    "coverage": "node scripts/coverage.mjs"
   },
   "dependencies": {},
   "devDependencies": {}
